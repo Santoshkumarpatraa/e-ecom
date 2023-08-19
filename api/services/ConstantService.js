@@ -38,7 +38,9 @@ module.exports = {
         ACCOUNT_NOT_FOUND: "Account not found.",
         ACCOUNT_LOGIN_SUCCESS: "Account login successfully.",
         ACCOUNT_LOGOUT_SUCCESS: "Account logout successfully.",
-        INVALID_CREDENTIALS: "Invalid Credentials."
+        INVALID_CREDENTIALS: "Invalid Credentials.",
+        ACCOUNT_ALREADY_EXISTS: "Account already exists",
+        OTP_SENT: "Otp sent.",
 
     }
 };

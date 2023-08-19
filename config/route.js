@@ -12,5 +12,6 @@ router.delete("/user/delete", require("../api/policies/Authorized").Authorized, 
 router.get("/user/details", require("../api/policies/Authorized").Authorized, require("../api/controllers/AccountController").userDetails);
 router.post("/user/login", require("../api/controllers/AccountController").userLogin);
 router.post("/user/logout", require("../api/policies/Authorized").Authorized, require("../api/controllers/AccountController").userLogout);
+router.post("/user/forgot/password", require("../api/controllers/AccountController").userForgotPassword);
 
 module.exports = router;

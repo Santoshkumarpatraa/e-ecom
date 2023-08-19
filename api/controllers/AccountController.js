@@ -1,6 +1,6 @@
 const Account = require("../models/Account");
 const Joi = require("joi");
-const { v4: uuidv4 } = require("uuid");
+const otpGenerator = require("otp-generator");
 
 module.exports = {
   /**
@@ -73,7 +73,24 @@ module.exports = {
         );
       }
 
-      let userId = uuidv4();
+      let accountExists = await Account.find({
+        email: request.email,
+        deletedAt: null,
+      });
+
+      if (!_.isEmpty(accountExists)) {
+        return ResponseService.jsonResponse(
+          res,
+          ConstantService.responseCode.BAD_REQUEST,
+          {
+            message: ConstantService.responseMessage.ACCOUNT_ALREADY_EXISTS,
+          }
+        );
+      }
+
+      let accountCount = await Account.count({});
+
+      let userId = `EECOM${++accountCount}`; // let userId = uuidv4();
 
       //Encrypting Password
       const hashedPassword = await BcryptService.encryptedPassword(
@@ -83,7 +100,7 @@ module.exports = {
       request.userId = userId;
 
       let account = await Account.create({
-        userId: userId,
+        userId: request.userId,
         name: `${request.firstName} ${request.lastName}`.trim(),
         email: request.email,
         contactNumber: request.contactNumber,
@@ -96,6 +113,13 @@ module.exports = {
       });
 
       account = _.omit(request, ["password"]);
+
+      let template = await ejs.renderFile("views/Welcom.ejs", {
+        name: `${request.firstName} ${request.lastName}`.trim(),
+      });
+      let subject = "Welcome to e-ecom - Your New Account Awaits!";
+
+      await MailService.sendMail(request.email, subject, template);
 
       return ResponseService.jsonResponse(
         res,
@@ -291,7 +315,10 @@ module.exports = {
         );
       }
 
-      await Account.deleteOne({ userId: request.userId });
+      await Account.updateOne(
+        { userId: request.userId },
+        { deletedAt: new Date(), token: [] }
+      );
 
       return ResponseService.jsonResponse(
         res,
@@ -468,7 +495,7 @@ module.exports = {
 
       let token = await JwtService.sign(accountDetails[0].userId);
 
-      let tokens = accountDetails[0].token
+      let tokens = accountDetails[0].token;
       tokens.push(token.accessToken);
 
       await Account.updateOne(
@@ -530,6 +557,92 @@ module.exports = {
         ConstantService.responseCode.SUCCESS,
         {
           message: ConstantService.responseMessage.ACCOUNT_LOGOUT_SUCCESS,
+        }
+      );
+    } catch (exeception) {
+      console.log(exeception);
+      return ResponseService.json(
+        res,
+        ConstantService.responseCode.INTERNAL_SERVER_ERROR,
+        ConstantService.responseMessage.ERR_MSG_ISSUE_IN_ACCOUNT_LOGOUT_API
+      );
+    }
+  },
+
+  /**
+   * User forgot password.
+   * API Endpoint :   /user/forgot/password
+   * API Method   :   POST
+   *
+   * @param   {Object}        req          Request Object From API Request.
+   * @param   {Object}        res          Response Object For API Request.
+   * @returns {Promise<*>}    JSONResponse With success code 200 and  information or relevant error code with message.
+   */
+
+  userForgotPassword: async (req, res) => {
+    try {
+      console.info(
+        "====================== FORGOT PASSWORD : ACCOUNT REQUEST ==============================\n"
+      );
+      console.info(
+        "HTTP Method - " + req.method + "  |||||||||||  URL - " + req.url + "\n"
+      );
+      console.info("REQ BODY :", req.body);
+
+      //Extracting account info from request body
+      let request = {
+        email: req.body.email,
+      };
+
+      //Creating a Valid Schema for request.
+      const schema = Joi.object().keys({
+        email: Joi.string().required(),
+      });
+
+      //Validating Request with Valid schema.
+      const validateResult = schema.validate(request);
+
+      //Returning bad request for invalid request.
+      if (validateResult.error) {
+        return ResponseService.jsonResponse(
+          res,
+          ConstantService.responseCode.BAD_REQUEST,
+          {
+            message: validateResult.error.message,
+          }
+        );
+      }
+
+      let accountExists = await Account.find({
+        email: request.email,
+        deletedAt: null,
+      }).select("name");
+
+      if (_.isEmpty(accountExists)) {
+        return ResponseService.jsonResponse(
+          res,
+          ConstantService.responseCode.BAD_REQUEST,
+          {
+            message: ConstantService.responseMessage.ACCOUNT_NOT_FOUND,
+          }
+        );
+      }
+
+      let encodedOtp = otpGenerator.generate(6);
+
+      const template = await ejs.renderFile("views/Otp.ejs", {
+        encodedOtp: encodedOtp,
+        name: accountExists[0].name,
+      });
+      let subject = "Your One-Time Password (OTP) for password reset";
+
+      await MailService.sendMail(request.email, subject, template);
+
+      return ResponseService.jsonResponse(
+        res,
+        ConstantService.responseCode.SUCCESS,
+        {
+          message: ConstantService.responseMessage.OTP_SENT,
         }
       );
     } catch (exeception) {
