@@ -14,7 +14,8 @@ module.exports = {
    */
 
   ping: async (req, res) => {
-    res.status(200).send("OK");
+    //res.status(200).send("OK");
+    res.render("pages/homePage")
   },
 
   /**
@@ -109,12 +110,12 @@ module.exports = {
         firstName: request.firstName,
         lastName: request.lastName,
         showProductTour: true,
-        roleType: request.roleType,
+        roleType: request.roleType ? request.roleType : 'user',
       });
 
       account = _.omit(request, ["password"]);
 
-      let template = await ejs.renderFile("views/Welcom.ejs", {
+      let template = await ejs.renderFile("views/emails/Welcome.ejs", {
         name: `${request.firstName} ${request.lastName}`.trim(),
       });
       let subject = "Welcome to e-ecom - Your New Account Awaits!";
@@ -630,7 +631,7 @@ module.exports = {
 
       let encodedOtp = otpGenerator.generate(6);
 
-      const template = await ejs.renderFile("views/Otp.ejs", {
+      let template = await ejs.renderFile("views/emails/Otp.ejs", {
         encodedOtp: encodedOtp,
         name: accountExists[0].name,
       });

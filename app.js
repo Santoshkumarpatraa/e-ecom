@@ -6,6 +6,10 @@ const _ = require('lodash');
 const cors = require('cors')
 const ejs = require('ejs');
 const path = require('path')
+const parser = require('body-parser');
+const session = require("express-session");
+const passport = require("passport");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
 
 const ConstantService = require("./api/services/ConstantService");
 const ResponseService = require("./api/services/ResponseService");
@@ -17,6 +21,8 @@ const customs = require("./config/custom.js");
 const port = process.env.PORT || 5001;
 
 app.use(express.json());
+app.use(parser.urlencoded({ extended: false }))
+app.use(parser.json())
 
 //Mongo Connection
 connectDb();

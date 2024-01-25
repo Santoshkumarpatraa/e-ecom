@@ -5,6 +5,9 @@ const router = express.Router();
 // For Server Check/Ping
 router.get("/", require("../api/controllers/AccountController").ping);
 
+// HomePage
+//router.get("/home", require("../api/controllers/AccountController").ping);
+
 // Account Controller
 router.post("/user/add", require("../api/controllers/AccountController").userAdd);
 router.put("/user/update", require("../api/policies/Authorized").Authorized, require("../api/controllers/AccountController").userUpdate);
